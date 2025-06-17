@@ -1,0 +1,38 @@
+# --- Node ---
+node_modules/
+.pnpm/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# --- Next.js ---
+.next/
+out/
+.vercel/
+*.vercel_build_output/
+
+# --- Environment & Local Settings ---
+.env*
+!.env.example
+.DS_Store
+.vscode/
+.idea/
+
+# --- Logs ---
+logs/
+*.log
+*.tsbuildinfo
+
+# --- Prisma & DB ---
+prisma/dev.db
+prisma/dev.db-journal
+*.sqlite
+
+# --- Coverage & Build ---
+coverage/
+dist/
+build/
+
+# --- Misc ---
+*.local
+*.swp
