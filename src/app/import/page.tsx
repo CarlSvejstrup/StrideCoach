@@ -53,11 +53,18 @@ export default async function ImportPage() {
                                 </div>
                             </div>
 
-                            <Link href="/chat" className="w-full">
-                                <Button variant="outline" className="w-full">
-                                    Go to Chat <ArrowRight className="ml-2 h-4 w-4" />
-                                </Button>
-                            </Link>
+                            <div className="flex flex-col gap-2 w-full">
+                                <Link href="/chat" className="w-full">
+                                    <Button variant="default" className="w-full">
+                                        Go to Chat <ArrowRight className="ml-2 h-4 w-4" />
+                                    </Button>
+                                </Link>
+                                <Link href="/dashboard" className="w-full">
+                                    <Button variant="outline" className="w-full">
+                                        View Dashboard
+                                    </Button>
+                                </Link>
+                            </div>
                         </>
                     )}
                 </CardContent>

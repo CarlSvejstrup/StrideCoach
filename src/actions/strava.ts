@@ -33,7 +33,7 @@ export async function importActivities() {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
-                    client_id: process.env.STRAVA_CLIENT_ID,
+                    client_id: Number(process.env.STRAVA_CLIENT_ID),
                     client_secret: process.env.STRAVA_CLIENT_SECRET,
                     grant_type: "refresh_token",
                     refresh_token: account.refresh_token,
@@ -72,10 +72,12 @@ export async function importActivities() {
     })
 
     if (!activitiesResponse.ok) {
+        console.error("Strava Error Details:", await activitiesResponse.text())
         throw new Error(`Strava API Error: ${activitiesResponse.statusText}`)
     }
 
     const activities = await activitiesResponse.json()
+    console.log(`DEBUG: Fetched ${activities.length} activities from Strava`)
     let importCount = 0
 
     // 4. Upsert to DB
