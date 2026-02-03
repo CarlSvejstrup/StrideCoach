@@ -1,19 +1,24 @@
 'use client'
 
 import { useChat } from '@ai-sdk/react'
-import { DefaultChatTransport, type UIMessage, type UIMessagePart } from 'ai'
+import { DefaultChatTransport, type UIMessage } from 'ai'
 import { useRef, useEffect, useState, type ChangeEvent, type FormEvent } from 'react'
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
-import { Send, Bot, User, Loader2, ArrowLeft, Trash2 } from "lucide-react"
+import { Send, Bot, User, Loader2, ArrowLeft, Trash2, BrainCircuit } from "lucide-react"
 import Link from "next/link"
 import ReactMarkdown from 'react-markdown'
+import { Switch } from "@/components/ui/switch"
+import { Label } from "@/components/ui/label"
 
 export default function ChatClient() {
-    // 1. Core useChat hook - standard configuration
+    const [thinking, setThinking] = useState(false)
+    const [input, setInput] = useState('')
+
+    // Standard useChat configuration
     const { messages, sendMessage, setMessages, status } = useChat({
         transport: new DefaultChatTransport({ api: '/api/chat' }),
         onError: (err) => {
@@ -23,17 +28,15 @@ export default function ChatClient() {
     })
 
     const scrollRef = useRef<HTMLDivElement>(null)
-    const [input, setInput] = useState('')
     const isSending = status === 'submitted' || status === 'streaming'
 
-    // 2. Auto-scroll to bottom directly on message updates
+    // Auto-scroll to bottom
     useEffect(() => {
         if (scrollRef.current) {
             scrollRef.current.scrollIntoView({ behavior: 'smooth' })
         }
     }, [messages])
 
-    // 3. Simple reset function
     const handleReset = () => {
         if (confirm("Clear chat history?")) {
             setMessages([])
@@ -44,18 +47,7 @@ export default function ChatClient() {
         setInput(event.target.value)
     }
 
-    const getMessageText = (message: UIMessage) => {
-        return message.parts
-            .filter((part): part is Extract<UIMessagePart, { type: 'text' }> => part.type === 'text')
-            .map((part) => part.text)
-            .join('')
-    }
-
-    const hasToolParts = (message: UIMessage) => {
-        return message.parts.some((part) => part.type === 'dynamic-tool' || part.type.startsWith('tool-'))
-    }
-
-    const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
+    const onSubmit = async (event: FormEvent<HTMLFormElement>) => {
         event.preventDefault()
         if (isSending) return
 
@@ -64,11 +56,24 @@ export default function ChatClient() {
 
         setInput('')
         try {
-            await sendMessage({ text: trimmed })
+            await sendMessage(
+                { text: trimmed },
+                { body: { thinking } }
+            )
         } catch (error) {
             console.error("Chat send failed:", error)
             setInput(trimmed)
         }
+    }
+
+    const getMessageText = (message: UIMessage) => {
+        return message.parts
+            .map((part) => (part.type === 'text' ? part.text : ''))
+            .join('')
+    }
+
+    const hasToolParts = (message: UIMessage) => {
+        return message.parts.some((part) => part.type === 'dynamic-tool' || part.type.startsWith('tool-'))
     }
 
     return (
@@ -89,16 +94,25 @@ export default function ChatClient() {
                         <Bot className="h-5 w-5 text-primary" />
                         Coach AI
                     </CardTitle>
-                    <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={handleReset}
-                        className="text-muted-foreground hover:text-destructive"
-                        title="Reset Chat"
-                    >
-                        <Trash2 className="h-4 w-4 mr-2" />
-                        Reset
-                    </Button>
+                    <div className="flex items-center gap-2">
+                        <div className="flex items-center space-x-2 pl-4 border-r pr-4 h-6">
+                            <Switch id="thinking-mode" checked={thinking} onCheckedChange={setThinking} />
+                            <Label htmlFor="thinking-mode" className="text-xs font-medium flex items-center gap-1 cursor-pointer">
+                                <BrainCircuit className="h-3 w-3" />
+                                Thinking
+                            </Label>
+                        </div>
+                        <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={handleReset}
+                            className="text-muted-foreground hover:text-destructive"
+                            title="Reset Chat"
+                        >
+                            <Trash2 className="h-4 w-4 mr-2" />
+                            Reset
+                        </Button>
+                    </div>
                 </CardHeader>
 
                 <CardContent className="flex-1 p-0 overflow-hidden relative">
@@ -162,7 +176,7 @@ export default function ChatClient() {
 
                 <CardFooter className="p-4 border-t">
                     <form
-                        onSubmit={handleSubmit}
+                        onSubmit={onSubmit}
                         className="flex w-full gap-2 items-center"
                     >
                         <Input
@@ -170,6 +184,7 @@ export default function ChatClient() {
                             onChange={handleInputChange}
                             placeholder="Ask your coach..."
                             className="flex-1"
+                            disabled={isSending}
                         />
                         <Button
                             type="submit"

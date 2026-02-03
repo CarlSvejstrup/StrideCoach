@@ -46,6 +46,7 @@ model User {
   accounts      Account[]
   sessions      Session[]
   activities    Activity[]
+  trainingProgram String? // Stores the markdown content of the training program
 }
 
 model VerificationToken {

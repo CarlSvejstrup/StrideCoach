@@ -7,6 +7,7 @@ import { SyncButton } from "./sync-button"
 import { Button } from "@/components/ui/button"
 import { ArrowRight } from "lucide-react"
 import Link from "next/link"
+import { ProgramUploader } from "@/components/program-uploader"
 
 export default async function ImportPage() {
     const session = await auth()
@@ -40,6 +41,9 @@ export default async function ImportPage() {
                                     Connected as <span className="text-primary">{session.user?.name}</span>
                                 </p>
                                 <SyncButton />
+                                <div className="w-full pt-4">
+                                    <ProgramUploader />
+                                </div>
                             </div>
 
                             <div className="relative w-full">

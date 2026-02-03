@@ -19,16 +19,17 @@ export async function POST(req: Request) {
 
     const { messages: rawMessages = [], thinking } = await req.json()
     const safeMessages = Array.isArray(rawMessages) ? rawMessages : []
-    console.log("DEBUG: Received", safeMessages.length, "messages. Thinking Mode:", thinking)
+    const thinkingEnabled = Boolean(thinking)
+    console.log("DEBUG: Received", safeMessages.length, "messages. Thinking Mode:", thinkingEnabled)
     const context = await getLastActivitiesContext(session.user.id)
     const memory = await getMemory()
-    const trainingPlan = await getTrainingPlan()
+    const trainingPlan = await getTrainingPlan(session.user.id)
 
     const systemPrompt = generateSystemPrompt({
         context,
         memory,
         trainingPlan,
-        thinking
+        thinking: thinkingEnabled
     })
 
     try {
@@ -61,7 +62,7 @@ export async function POST(req: Request) {
             system: systemPrompt,
             messages,
             maxSteps: 5,
-            providerOptions: thinking ? {
+            providerOptions: thinkingEnabled ? {
                 google: {
                     thinkingConfig: {
                         thinkingBudget: 10000
