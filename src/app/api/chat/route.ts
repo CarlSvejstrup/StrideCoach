@@ -1,5 +1,5 @@
 import { google } from "@ai-sdk/google"
-import { streamText, tool } from "ai"
+import { streamText, tool, convertToModelMessages } from "ai"
 import { auth } from "@/auth"
 import { getLastActivitiesContext } from "@/lib/context"
 import { getMemory, saveMemory, getTrainingPlan } from "@/lib/memory"
@@ -17,8 +17,9 @@ export async function POST(req: Request) {
         return new Response("Unauthorized", { status: 401 })
     }
 
-    const { messages, thinking } = await req.json()
-    console.log("DEBUG: Received", messages.length, "messages. Thinking Mode:", thinking)
+    const { messages: rawMessages = [], thinking } = await req.json()
+    const safeMessages = Array.isArray(rawMessages) ? rawMessages : []
+    console.log("DEBUG: Received", safeMessages.length, "messages. Thinking Mode:", thinking)
     const context = await getLastActivitiesContext(session.user.id)
     const memory = await getMemory()
     const trainingPlan = await getTrainingPlan()
@@ -30,9 +31,30 @@ export async function POST(req: Request) {
         thinking
     })
 
-    // In AI SDK v6, messages can be passed directly if they match CoreMessage or are converted automatically.
-    // The 'messages' from useChat hook are compatible with the SDK's expected format for streamText.
     try {
+        const tools = {
+            remember: tool({
+                description: 'Save a fact about the user to long-term memory.',
+                parameters: z.object({ fact: z.string().describe("The fact to remember") }),
+                execute: async ({ fact }: { fact: string }) => {
+                    console.log("DEBUG: Saving memory:", fact)
+                    if (fact) {
+                        await saveMemory(fact)
+                    }
+                    return "Memory saved."
+                },
+            }),
+        }
+
+        const messages = await convertToModelMessages(
+            safeMessages.map((message: { id?: string }) => {
+                const { id: _id, ...rest } = message
+                void _id
+                return rest
+            }),
+            { tools }
+        )
+
         console.log("DEBUG: Starting stream with", messages.length, "messages")
         const result = await streamText({
             model: google("gemini-2.5-flash-lite"),
@@ -46,25 +68,14 @@ export async function POST(req: Request) {
                     }
                 }
             } : undefined,
-            tools: {
-                remember: tool({
-                    description: 'Save a fact about the user to long-term memory.',
-                    parameters: z.object({ fact: z.string().describe("The fact to remember") }),
-                    execute: async ({ fact }: { fact: string }) => {
-                        console.log("DEBUG: Saving memory:", fact)
-                        if (fact) {
-                            await saveMemory(fact)
-                        }
-                        return "Memory saved."
-                    },
-                }),
-            },
-        } as any)
+            tools,
+        })
 
-        return (result as any).toDataStreamResponse()
+        return result.toUIMessageStreamResponse()
     } catch (error) {
         console.error("DEBUG: AI Generation Error:", error)
-        return new Response(JSON.stringify({ error: (error as any).message }), {
+        const message = error instanceof Error ? error.message : "Unknown error"
+        return new Response(JSON.stringify({ error: message }), {
             status: 500,
             headers: { 'Content-Type': 'application/json' }
         })
