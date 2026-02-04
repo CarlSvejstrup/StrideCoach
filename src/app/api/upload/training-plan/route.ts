@@ -23,7 +23,7 @@ export async function POST(req: Request) {
 
         const text = await file.text()
 
-        await saveTrainingPlan(text)
+        await saveTrainingPlan(session.user.id, text)
 
         return NextResponse.json({ success: true, message: "Training plan uploaded" })
     } catch (error) {

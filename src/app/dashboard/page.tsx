@@ -1,27 +1,26 @@
 import { auth } from "@/auth"
-import { prisma } from "@/lib/db"
-import {
-    Table,
-    TableBody,
-    TableCell,
-    TableHead,
-    TableHeader,
-    TableRow,
-} from "@/components/ui/table"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { format } from "date-fns"
 import { redirect } from "next/navigation"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
-import { ArrowUpRight, Calendar, Activity as ActivityIcon, Timer } from "lucide-react"
+import { prisma } from "@/lib/db"
 
 import { DashboardContent } from "@/components/DashboardContent"
+import { TrainingCalendar } from "@/components/training-calendar"
+import { parseTrainingPlan } from "@/lib/training-parser"
 
 async function getActivities(userId: string) {
     return await prisma.activity.findMany({
         where: { userId },
         orderBy: { startTime: 'desc' },
     })
+}
+
+async function getUserTrainingPlan(userId: string) {
+    const user = await prisma.user.findUnique({
+        where: { id: userId },
+        select: { trainingProgram: true }
+    })
+    return parseTrainingPlan(user?.trainingProgram || null)
 }
 
 export default async function DashboardPage() {
@@ -31,10 +30,10 @@ export default async function DashboardPage() {
         redirect("/")
     }
 
-    const activities = await getActivities(session.user.id)
-
-    const totalDistance = activities.reduce((acc, curr) => acc + curr.distanceM, 0) / 1000
-    const totalRuns = activities.length
+    const [activities, trainingPlan] = await Promise.all([
+        getActivities(session.user.id),
+        getUserTrainingPlan(session.user.id)
+    ])
 
     return (
         <div className="container p-6 space-y-8">
@@ -53,7 +52,10 @@ export default async function DashboardPage() {
                 </div>
             </div>
 
-            <DashboardContent activities={activities} />
+            <div className="grid gap-6">
+                <TrainingCalendar weeks={trainingPlan} />
+                <DashboardContent activities={activities} />
+            </div>
         </div>
     )
 }

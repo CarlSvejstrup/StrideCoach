@@ -63,9 +63,9 @@ export async function importActivities() {
         }
     }
 
-    // 3. Fetch Activities (Last 30 days or simple page 1)
+    // 3. Fetch Activities (Last 200 to cover more history for stats)
     const STRAVA_API = "https://www.strava.com/api/v3"
-    const activitiesResponse = await fetch(`${STRAVA_API}/athlete/activities?per_page=30`, {
+    const activitiesResponse = await fetch(`${STRAVA_API}/athlete/activities?per_page=200`, {
         headers: {
             Authorization: `Bearer ${accessToken}`
         }
@@ -92,6 +92,7 @@ export async function importActivities() {
                 distanceM: activity.distance,
                 movingS: activity.moving_time,
                 averageHr: activity.average_heartrate || null,
+                totalElevationGain: activity.total_elevation_gain || 0,
             },
             create: {
                 stravaId: BigInt(activity.id),
@@ -102,6 +103,7 @@ export async function importActivities() {
                 distanceM: activity.distance,
                 movingS: activity.moving_time,
                 averageHr: activity.average_heartrate || null,
+                totalElevationGain: activity.total_elevation_gain || 0,
             }
         })
         importCount++

@@ -15,8 +15,8 @@ export function ProgramUploader() {
         const file = e.target.files?.[0]
         if (!file) return
 
-        if (!file.name.endsWith('.md')) {
-            alert("Please upload a .md file")
+        if (!file.name.endsWith('.md') && !file.name.endsWith('.json')) {
+            alert("Please upload a .md or .json file")
             return
         }
 
@@ -45,7 +45,7 @@ export function ProgramUploader() {
             <CardHeader className="pb-3">
                 <CardTitle className="text-base">Upload Training Program</CardTitle>
                 <CardDescription>
-                    Upload a markdown (.md) file containing your training schedule.
+                    Upload a markdown (.md) or JSON (.json) file containing your training schedule.
                 </CardDescription>
             </CardHeader>
             <CardContent>
@@ -64,14 +64,14 @@ export function ProgramUploader() {
                                     <Upload className="w-8 h-8 text-muted-foreground" />
                                 )}
                                 <span className="font-medium text-muted-foreground text-sm">
-                                    {fileName || "Click to upload .md file"}
+                                    {fileName || "Click to upload .md or .json file"}
                                 </span>
                             </div>
                             <input
                                 id="program-upload"
                                 type="file"
                                 className="hidden"
-                                accept=".md"
+                                accept=".md,.json"
                                 onChange={handleFileUpload}
                                 disabled={isUploading}
                             />

@@ -27,6 +27,18 @@ export async function saveMemory(content: string): Promise<void> {
     await fs.appendFile(MEMORY_FILE, `\n- ${content}`)
 }
 
+export async function saveTrainingPlan(userId: string, content: string): Promise<void> {
+    try {
+        await prisma.user.update({
+            where: { id: userId },
+            data: { trainingProgram: content }
+        })
+    } catch (error) {
+        console.error("Error saving training plan:", error)
+        throw error
+    }
+}
+
 export async function getTrainingPlan(userId: string): Promise<string> {
     try {
         // Fetch from DB
